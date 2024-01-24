@@ -1,13 +1,8 @@
 "use client";
 
-import OpenAI from "openai";
 import { useState } from "react";
 
 export default function Home() {
-  const openai = new OpenAI({
-    apiKey: "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",
-    dangerouslyAllowBrowser: true,
-  });
   const [threadId, setThreadId] = useState();
   const [message1, setMessage1] = useState();
   const [message2, setMessage2] = useState();
@@ -23,58 +18,67 @@ export default function Home() {
     if (threadId && !bodyResult) {
       setTimeout(() => {
         setMessage1(true);
-      }, 2000);
+      }, 1000);
       setTimeout(() => {
         setMessage2(true);
-      }, 7000);
+      }, 3000);
       setTimeout(() => {
         setMessage3(true);
-      }, 8000);
+      }, 4000);
       retrieveMessages();
     }
   }, 5000);
 
   const retrieveMessages = async () => {
     if (!bodyResult) {
-      const messages = await openai.beta.threads.messages.list(threadId);
-      console.log(bodyResult);
-      if (messages.data.length > 1) {
-        setLoading(false);
-        setBodyResult(messages.data[0].content[0].text.value);
-        clearInterval(intervalId);
-      }
+      fetch(
+        "/api/messages?" +
+          new URLSearchParams({
+            threadId,
+          })
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          setBodyResult(data.result);
+          setLoading(false);
+          clearInterval(intervalId);
+        })
+        .catch((err) => console.error(err));
     }
   };
 
   async function onSubmit(event) {
     event.preventDefault();
-
-    const thread = await openai.beta.threads.create();
-    await openai.beta.threads.messages.create(thread.id, {
-      content: event.target.story.value,
-      role: "user",
-    });
-    await openai.beta.threads.runs.create(thread.id, { assistant_id: "asst_dLBrzLObqq5X5yNc3R9uEJg9" });
-    setThreadId(thread.id);
-    setLoading(true);
+    fetch(
+      "/api/diagram?" +
+        new URLSearchParams({
+          content: event.target.story.value,
+        }),
+      {}
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        setThreadId(data.threadId);
+        setLoading(true);
+      });
   }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-start">
-      <div class="w-1/3 flex justify-center p-10">
-        <img src={"/hackathon.png"}></img>
+      <div className="w-full flex justify-evenly items-center p-10">
+        <img className="w-1/4" src={"/hackathon.png"}></img>
       </div>
       <form className="w-1/2 bg-gray-50 p-10 rounded-xl" onSubmit={(event) => onSubmit(event)}>
-        {threadId ? (
+        {threadId && !bodyResult ? (
           <>
-            <div class="flex p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50" role="alert">
-              <svg class="flex-shrink-0 inline w-4 h-4 me-3 mt-[2px]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+            <div className="flex p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50" role="alert">
+              <svg className="flex-shrink-0 inline w-4 h-4 me-3 mt-[2px]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
               </svg>
-              <span class="sr-only">Info</span>
+              <span className="sr-only">Info</span>
               <div>
-                <span class="font-medium">In a few moments your diagram will be generated.</span>
-                <ul class="mt-1.5 list-disc list-inside">
+                <span className="font-medium">In a few moments your diagram will be generated.</span>
+                <ul className="mt-1.5 list-disc list-inside">
                   {message1 ? <li>Grab a popcorn, watch a Tik Tok, i don't care 😑</li> : ""}
                   {message2 ? <li>Wait a little more, i'll get a coffee ☕</li> : ""}
                   {message3 ? <li>Building the best diagram you will ever see 😎</li> : ""}
@@ -90,7 +94,7 @@ export default function Home() {
             Insert story description
           </label>
           <textarea
-            className="appearance-none border border-gray-400 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-indigo-500"
+            className="text-xs appearance-none border border-gray-400 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-indigo-500"
             id="story"
             type="text"
             name="story"
@@ -116,8 +120,8 @@ export default function Home() {
           ""
         )}
         {loading ? (
-          <div role="status" class="w-full flex justify-center">
-            <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div role="status" className="w-full flex justify-center">
+            <svg aria-hidden="true" className="w-8 h-8 text-gray-200 animate-spin fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
                 fill="currentColor"
@@ -127,21 +131,45 @@ export default function Home() {
                 fill="currentFill"
               />
             </svg>
-            <span class="sr-only">Loading...</span>
+            <span className="sr-only">Loading...</span>
           </div>
         ) : (
           ""
         )}
       </form>
-      <div class="w-1/2 bg-white mt-2 rounded-xl min-h-28 p-5">
-        <textarea
+      <div className={`w-1/2 bg-white mt-2 rounded-xl p-5 ${!bodyResult ? "hidden" : ""}`}>
+        {bodyResult ? (
+          <div class="flex items-start gap-2.5">
+            <img class="w-8 h-8 rounded-full" src="/bot.png" alt="Jese image" />
+            <div class="flex flex-col w-full leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl ">
+              <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                <span class="text-sm font-semibold text-gray-900 ">GPT</span>
+                <span class="text-sm font-normal text-gray-500 ">{`${new Date().getHours()}:${new Date().getUTCMinutes()}`}</span>
+              </div>
+              <p class="text-sm font-normal py-2.5 text-gray-900 ">
+                <textarea
+                  className="appearance-none border border-gray-400 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-indigo-500"
+                  id="story"
+                  type="text"
+                  name="story"
+                  placeholder="Result..."
+                  defaultValue={bodyResult}
+                />
+              </p>
+            </div>
+          </div>
+        ) : (
+          ""
+        )}
+
+        {/* <textarea
           className="appearance-none border border-gray-400 rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:border-indigo-500"
           id="story"
           type="text"
           name="story"
           placeholder="Result..."
-          value={bodyResult ? bodyResult : ""}
-        />
+          defaultValue={bodyResult ? bodyResult : ""}
+        /> */}
       </div>
     </main>
   );
