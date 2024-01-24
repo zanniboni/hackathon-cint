@@ -5,7 +5,7 @@ import { useState } from "react";
 
 export default function Home() {
   const openai = new OpenAI({
-    apiKey: "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",
+    apiKey: "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",
     dangerouslyAllowBrowser: true,
   });
   const [threadId, setThreadId] = useState();
